@@ -77,7 +77,9 @@ public class DataReader {
     	
     	List<String> data = TextfileIO.readFile(filePath);
     	for(int i = 0 ; i < data.size() ; i ++) {
-    		Komen k = new Komen(data.get(i), label);
+    		String content = data.get(i);
+    		//content = content.replace("\",\"", " ");
+    		Komen k = new Komen(content, label);
     		
     		result.add(k);
     	}

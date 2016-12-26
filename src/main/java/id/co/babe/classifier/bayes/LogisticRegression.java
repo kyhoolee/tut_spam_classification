@@ -21,14 +21,15 @@ public class LogisticRegression {
 	private double[] weights;
 
 	/** the number of iterations */
-	private int ITERATIONS = 3000;
+	private int ITERATIONS = 1000;
 
 	public LogisticRegression(int n) {
-		this.rate = 0.0001;
-		weights = new double[n];
+		this.rate = 0.1;
+		this.weights = new double[n];
 		for(int i = 0 ; i < weights.length ; i ++) {
-			weights[i] = 1;
+			this.weights[i] = 1.0;
 		}
+		System.out.println(Util.toString(this.weights));
 	}
 
 	private static double sigmoid(double z) {
@@ -36,11 +37,12 @@ public class LogisticRegression {
 	}
 
 	public void train(List<Instance> instances) {
+		System.out.println(Util.toString(this.weights));
 		for (int n=0; n<ITERATIONS; n++) {
 			double lik = 0.0;
 			for (int i=0; i<instances.size(); i++) {
 				double[] x = instances.get(i).x;
-				//System.out.println(x);
+				//System.out.println(Util.toString(x) + " :: " + Util.toString(this.weights));
 				double predicted = classify(x);
 				int label = instances.get(i).label;
 				for (int j=0; j<weights.length; j++) {
@@ -59,9 +61,11 @@ public class LogisticRegression {
 		for (int i=0; i<weights.length;i++)  {
 			
 			logit += (double) (weights[i] * x[i]);
+			//System.out.println(weights[i] + " " + x[i]);
 		}
 		double result = sigmoid(logit);
 		//System.out.println(weights.length + " :: " + x.length + " :: " + logit + " -- " + result + " -- " + Util.toString(x));
+		//System.out.println("\n");
 		return result;
 	}
 

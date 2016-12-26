@@ -10,27 +10,25 @@ import id.co.babe.classifier.bayes.LogisticRegression;
 import id.co.babe.classifier.bayes.LogisticRegression.Instance;
 import id.co.babe.filter.model.Komen;
 import id.co.babe.filter.model.KomenDataset;
+import id.co.babe.util.Util;
 
 public class SpamFilter {
 	
 	
 	public static void main(String[] args) {
-		//ruleFilter();
-		logisticFilter();
+		ruleFilter();
+		//logisticFilter();
 	}
 	
+	public static final String ROOT = "/home/kyhoolee/tutorial/learn/projects/spam_filter/Spam-Classification/";
 	private static KomenDataset buildData() {
 		KomenDataset data = new KomenDataset(); 
 		
-		data.updateData(DataReader.readSpamKomens("/home/mainspring/tutorial/learn/text-classifier/data/neg_words.txt"), 0.1);
-		data.updateData(DataReader.readSpamKomens("/home/mainspring/tutorial/learn/text-classifier/data/spam_output.txt.1"), 0.1);
-		
-		data.updateData(DataReader.readNormalKomens("/home/mainspring/tutorial/learn/text-classifier/data/pure_comments.txt.1"), 0.1);
-		
-		
-		
-		data.updateData(DataReader.readSpamKomens("/home/mainspring/tutorial/learn/text-classifier/data/pure_spam.txt.1"), 0.1);
-		data.updateData(DataReader.readSpamKomens("/home/mainspring/tutorial/learn/text-classifier/data/pure_spam_1.txt.1"), 0.1);
+		data.updateData(DataReader.readSpamKomens(ROOT + "neg_words.txt"), 1);
+		data.updateData(DataReader.readSpamKomens(ROOT + "spam_output.txt.1"), 0.6);
+		data.updateData(DataReader.readNormalKomens(ROOT + "pure_comments.txt.1"), 0.6);
+		data.updateData(DataReader.readSpamKomens(ROOT + "pure_spam.txt.1"), 0.6);
+		data.updateData(DataReader.readSpamKomens(ROOT + "pure_spam_1.txt.1"), 0.6);
 		
 		
 		
@@ -47,13 +45,17 @@ public class SpamFilter {
 	
 	private static double[] getFeatures(Komen k, BayesClassifier<String, Integer> bayes) {
 		double[] input = new double[5];
-		double isSpam = bayes.categoryProbability(Arrays.asList(k.content.toLowerCase().split("\\s")), Komen.SPAM);
-		double isNormal = bayes.categoryProbability(Arrays.asList(k.content.toLowerCase().split("\\s")), Komen.NORMAL);
-		input[0] = 0;//Math.log(isSpam + 1) - Math.log(isNormal + 1);
+		input[0] = bayes.classify(Arrays.asList(k.content.toLowerCase().split("\\s"))).getCategory();
 		input[1] = 0.01 * RuleFilter.lengthRule(k.content);
 		input[2] = RuleFilter.singlecharacterRule(k.content);
 		input[3] = 0.01 * RuleFilter.specialWordRule(k.content);
 		input[4] = RuleFilter.uppercaseRule(k.content);
+		
+//		if (Util.checkNan(input)) {
+//		    System.out.println(Util.toString(input));
+//		    System.out.println(k.label + " -- " + k.content);
+//		    System.out.println("\n");
+//		}
 		
 		return input;
 	}
@@ -76,11 +78,12 @@ public class SpamFilter {
 			instances.add(inst);
 			System.out.println(inst);
 		}
+		
 		LogisticRegression logistic = new LogisticRegression(5);
 		logistic.train(instances);
 		
 		
-		/*
+		
 		// Test the model
 		int false_pos = 0;
 		int false_neg = 0;
@@ -127,13 +130,13 @@ public class SpamFilter {
 		System.out.println("False_pos: " + false_pos + " -- Total_pos: " + (false_pos + true_pos));
 		System.out.println("False_neg: " + false_neg + " -- Total_neg: " + (false_neg + true_neg));
 		
-		TextfileIO.writeFile("/home/mainspring/tutorial/learn/text-classifier/data/false_negative.txt", falseNegList);
+		TextfileIO.writeFile(ROOT + "false_negative.txt", falseNegList);
 		
 		double precision = true_pos * 1.0 / (true_pos + false_pos);
 		double recall = true_pos * 1.0 / (false_neg + true_pos);
 		System.out.println("Precision: " + precision + " -- Recall: " + recall);
 		
-		*/
+		
 	}
 	
 	public static void ruleFilter() {
@@ -143,7 +146,7 @@ public class SpamFilter {
 		BayesClassifier<String, Integer> bayes = new BayesClassifier<String, Integer>();
 		for(int i = 0; i < data.train.size() ; i ++) {
 			Komen k = data.train.get(i);
-			bayes.learn(k.label, Arrays.asList(k.content.split("\\s")));
+			bayes.learn(k.label, Arrays.asList(k.content.toLowerCase().split("\\s")));
 		}
 		
 		// Test the model
@@ -154,21 +157,23 @@ public class SpamFilter {
 		int true_neg = 0;
 		
 		List<String> falseNegList = new ArrayList<>();
+		List<String> falsePosList = new ArrayList<>();
 		
 		for(int i = 0 ; i < data.test.size() ; i ++) {
 			Komen k = data.test.get(i);
 			int res = bayes.classify(Arrays.asList(k.content.toLowerCase().split("\\s"))).getCategory();
+			k.content = Util.filter(k.content);
 			if(res == Komen.NORMAL) {
-				res = RuleFilter.rule(k.content);
+				res = RuleFilter.ruleSpam(k.content);
+			} else { //if(res == Komen.SPAM) 
+				res = RuleFilter.ruleNormal(k.content);
 			}
 			if(k.label == Komen.SPAM && res == Komen.NORMAL) {
-				//System.out.println(res + " -- " + k.label + "   --  " + k.content);
-				//System.out.println(k.content);
-				RuleFilter.printRule(k.content);
+				falsePosList.add(RuleFilter.printRule(k.content).toLowerCase());
 			}
 			
 			if(k.label == Komen.NORMAL && res == Komen.SPAM) {
-				falseNegList.add(k.content);
+				falseNegList.add(RuleFilter.printRule(k.content));
 			}
 			
 			if(k.label == Komen.NORMAL) {
@@ -191,11 +196,15 @@ public class SpamFilter {
 		System.out.println("False_pos: " + false_pos + " -- Total_pos: " + (false_pos + true_pos));
 		System.out.println("False_neg: " + false_neg + " -- Total_neg: " + (false_neg + true_neg));
 		
-		TextfileIO.writeFile("/home/mainspring/tutorial/learn/text-classifier/data/false_negative.txt", falseNegList);
+		TextfileIO.writeFile(ROOT + "false_negative.txt", falseNegList);
+		TextfileIO.writeFile(ROOT + "false_positive.txt", falsePosList);
 		
 		double precision = true_pos * 1.0 / (true_pos + false_pos);
 		double recall = true_pos * 1.0 / (false_neg + true_pos);
 		System.out.println("Precision: " + precision + " -- Recall: " + recall);
+		
+		double f_score = 2 * precision * recall / (precision + recall);
+		System.out.println("F-Score: " + f_score);
 
 
 	}
