@@ -169,11 +169,11 @@ public class SpamFilter {
 				res = RuleFilter.ruleNormal(k.content);
 			}
 			if(k.label == Komen.SPAM && res == Komen.NORMAL) {
-				falsePosList.add(RuleFilter.printRule(k.content).toLowerCase());
+				falsePosList.add(k.content);//RuleFilter.printRule(k.content).toLowerCase());//
 			}
 			
 			if(k.label == Komen.NORMAL && res == Komen.SPAM) {
-				falseNegList.add(RuleFilter.printRule(k.content));
+				falseNegList.add(RuleFilter.printRule(k.content)); //k.content);//
 			}
 			
 			if(k.label == Komen.NORMAL) {

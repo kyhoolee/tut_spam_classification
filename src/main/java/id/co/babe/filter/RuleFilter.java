@@ -2,6 +2,7 @@ package id.co.babe.filter;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import id.co.babe.filter.model.Komen;
@@ -10,12 +11,15 @@ import id.co.babe.util.Util;
 public class RuleFilter {
 	
 	public static final Set<String> blackWords = new HashSet<String>(Arrays.asList(
-			"obat", "perangsang", "bbm", "bb", "pin:",
-			"sex", "sedia", "penis", "seks", "adult", "onani", "syahwat", "bokep",
+			"service", "sofa", "servis", 
+			
+			"obat", "perangsang", "bbm", "bb", "pin:", "idline:",
+			"sex", "sedia", "penis", "seks", "adult", "onani", "syahwat", "bokep", "khusus",
+			"vagina", "ejakulasi", "hubungan",
 			"besar", "panjang", "keras",
-			//"mencintai", "hubungan", "hasil", "germo",
-			"0813", "0851", "0856", "0857", "0858","0821","0812", "0878", 
-			"0818", "0877","081",
+			"mencintai", "hubungan", "hasil", "germo",
+			"0813", "0851", "0856", "0857", "0858","0821","0812", "0878", "0853", "0852",
+			"0818", "0877","081", "0822", "0811", "0877",
 			"fb.com"
 			
 			));
@@ -26,7 +30,7 @@ public class RuleFilter {
 				|| (uppercaseRule(input) > 0 && lengthRule(input) > 5 && specialWordRule(input) >= 1 && blackWord(input) > 1)  
 				|| (uppercaseRule(input) > 0.5 && blackWord(input) >= 1)
 				|| (specialWordRule(input) > 10 && blackWord(input) >= 1)
-				// || (specialWordRule(input) >= 3 && blackWord(input) >= 3) 
+				//|| (blackWord(input) >= 3) 
 				) {
 			return Komen.SPAM;
 		}
@@ -53,10 +57,15 @@ public class RuleFilter {
 				+ specialWordRule(input) + sep 
 				+ singlecharacterRule(input) + sep
 				+ blackWord(input) + sep 
+				+ Util.stringList(pinWord(input)) + sep
 				+ input
 				);
 		// System.out.println(result);
 		return result;
+	}
+	
+	public static List<String> pinWord(String input) {
+		return Util.bbPin(input);
 	}
 	
 	public static double blackWord(String input) {
@@ -65,6 +74,9 @@ public class RuleFilter {
 		for(String black : blackWords) {
 			result += Util.countSub(input.toLowerCase(), black);
 		}
+		
+		
+		result += Util.bbPin(input).size();
 		
 		return result;
 	}
